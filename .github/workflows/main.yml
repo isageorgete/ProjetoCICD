@@ -1,0 +1,62 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# evita dois deploys concorrentes para o mesmo ambiente
+concurrency:
+  group: prod-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production   # usa o ambiente “production” do GitHub (opcional, mas recomendado)
+    steps:
+      - name: Checkout (full history p/ métricas)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # importante para ferramentas que calculam lead time (histórico completo)
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'   # ajuste para a versão do seu projeto
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build (Production)
+        run: npm run build --if-present
+
+      - name: Test
+        run: npm test --if-present
+
+      # --- DEPLOY ---
+      # Se você usa script próprio:
+      - name: Make deploy script executable
+        run: chmod +x ./deploy.sh
+
+      - name: Deploy
+        id: deploy
+        run: ./deploy.sh
+
+      # Exemplo alternativo: deploy em Vercel/Netlify (substitua conforme o seu caso)
+      # - name: Deploy to Vercel
+      #   run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      # --- SLEUTH NOTIFY ---
+      - name: Notify Sleuth
+        if: ${{ success() && steps.deploy.outcome == 'success' }}
+        uses: sleuth-io/sleuth-action@v1
+        with:
+          api_key: ${{ secrets.SLEUTH_API_KEY }}
+          environment: production
+          # revision: ${{ github.sha }}
+          # repo: ${{ github.repository }}
+          # deployed_at: ${{ github.event.head_commit.timestamp }}
