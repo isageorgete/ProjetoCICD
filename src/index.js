@@ -7,3 +7,4 @@ function dobrarNumero(num) {
 }
 
 module.exports = { saudacao, dobrarNumero };
+// Fim do arquivo src/index.js
