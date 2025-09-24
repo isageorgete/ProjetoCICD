@@ -2,7 +2,7 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [master]
+    branches: [main]   # branch principal do seu repositório
   workflow_dispatch:
 
 concurrency:
@@ -11,58 +11,54 @@ concurrency:
 
 permissions:
   contents: read
-  issues: write   # 🔑 permite criar issues
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
-    
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # importante p/ métricas (lead time)
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
 
-      - name: Install dependencies
-        run: npm install
+    - name: Install dependencies
+      run: npm install
 
-      - name: Run tests
-        run: npm test
+    - name: Run tests
+      run: npm test --if-present
 
-      - name: Deploy to Vercel
-        id: deploy
-        run: npx vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    - name: Deploy to Vercel
+      id: deploy
+      run: npx vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Report Incident if Deploy Failed
-        if: ${{ failure() }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Deployment Failure - ${{ github.sha }}`,
-              labels: ['incident', 'deployment-failure'],
-              body: `Deployment failed for commit ${{ github.sha }}`
-            })
-            
-      - name: Notify Sleuth
-        if: ${{ success() }}
-        run: |
-          curl -X POST "https://app.sleuth.io/api/1/deployments" \
-            -H "Authorization: Bearer ${{ secrets.SLEUTH_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "environment": "production",
-              "sha": "${{ github.sha }}",
-              "repo": "${{ github.repository }}"
-            }'
+    - name: Report Incident if Deploy Failed
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Deployment Failure - ${{ github.sha }}`,
+            labels: ['incident', 'deployment-failure'],
+            body: `Deployment failed for commit ${{ github.sha }}`
+          })
+
+    - name: Notify Sleuth
+      if: success()
+      uses: sleuth-io/sleuth-action@main
+      with:
+        api-key: ${{ secrets.SLEUTH_API_KEY }}
+        deployment-slug: ${{ github.sha }}
+        environment: production
+        ignore-if-duplicate: true
