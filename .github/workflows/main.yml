@@ -2,7 +2,7 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [master]   # troque para master se o repo usar master
+    branches: [master]   # troque para main se o repo usar main
   workflow_dispatch:
 
 concurrency:
@@ -39,7 +39,7 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Report Incident if Deploy Failed
-        if: failure()
+        if: ${{ failure() }}
         uses: actions/github-script@v7
         with:
           script: |
@@ -50,11 +50,15 @@ jobs:
               labels: ['incident', 'deployment-failure'],
               body: `Deployment failed for commit ${{ github.sha }}`
             })
-
+            
       - name: Notify Sleuth
-        if: success()
-        uses: sleuth-io/sleuth-github-action@v1
-        with:
-          api_key: ${{ secrets.SLEUTH_API_KEY }}
-          environment: production
-          sha: ${{ github.sha }}
+        if: ${{ success() }}
+        run: |
+          curl -X POST "https://app.sleuth.io/api/1/deployments" \
+            -H "Authorization: Bearer ${{ secrets.SLEUTH_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "environment": "production",
+              "sha": "${{ github.sha }}",
+              "repo": "${{ github.repository }}"
+            }'
