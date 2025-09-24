@@ -11,7 +11,7 @@ echo "Iniciando o deploy..."
 # scp -r dist/* usuario@servidor:/caminho/do/deploy
 
 # Exemplo: Deploy estático (GitHub Pages, S3, etc)
-npm run deploy
+
 
 # Adicione aqui seus comandos de deploy
 echo "Deploy finalizado com sucesso!"
