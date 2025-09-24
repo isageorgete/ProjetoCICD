@@ -2,12 +2,16 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [master]   # troque para main se o repo usar main
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
   group: prod-${{ github.ref }}
   cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write   # 🔑 permite criar issues
 
 jobs:
   deploy:
