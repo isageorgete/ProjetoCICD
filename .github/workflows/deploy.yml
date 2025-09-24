@@ -1,41 +1,22 @@
-name: CI/CD Pipeline
+
+name: Deploy to Vercel
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v3
+    - uses: actions/checkout@v2
 
-      - name: Configurar Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+    - name: Install Vercel CLI
+      run: npm i -g vercel
 
-      - name: Instalar dependências
-        run: npm install
-
-      - name: Rodar testes
-        run: npm test
-
-      - name: Build
-        run: npm run build
-
-      # 🔥 Aqui entra a notificação do deploy para o Sleuth
-      - name: Notificar deploy no Sleuth
-        if: success()
-        run: |
-          curl -X POST "https://app.sleuth.io/api/1/deployments" \
-          -H "Authorization: Bearer ${{ secrets.SLEUTH_API_KEY }}" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "environment": "production",
-            "sha": "'${{ github.sha }}'",
-            "repo": "isageorgete/exeplo3-sleuth"
-          }'
+    - name: Deploy to Vercel
+      run: vercel --token ${{ secrets.VERCEL_TOKEN }} --prod # Se der erro, pode tentar colocar --yes
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
