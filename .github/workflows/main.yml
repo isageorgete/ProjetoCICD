@@ -54,9 +54,13 @@ jobs:
       - name: Notify Sleuth
         if: ${{ success() && steps.deploy.outcome == 'success' }}
         uses: sleuth-io/sleuth-action@main
+        env:
+            SLEUTH_API_KEY: ${{ secrets.SLEUTH_API_KEY }}   # sua chave de API
         with:
-          api_key: ${{ secrets.SLEUTH_API_KEY }}
-          environment: production
+            organization-slug: isageorgete   # troque pelo slug da sua org no Sleuth
+            deployment-environment: production   # nome do ambiente configurado no Sleuth
+            deployment-slug: ${{ github.sha }}   # pode usar o commit SHA como id do deploy
+
           # revision: ${{ github.sha }}
           # repo: ${{ github.repository }}
           # deployed_at: ${{ github.event.head_commit.timestamp }}
